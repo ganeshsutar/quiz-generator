@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuiz as useQuizData } from "@/hooks/useQuizzes";
 import {
   getQuestionsByIds,
   submitAnswer,
-  updateQuizProgress,
   completeQuiz,
 } from "@/hooks/useQuiz";
 import { useTimer, formatTime } from "@/hooks/useTimer";
@@ -13,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Loader2, Clock, AlertCircle } from "lucide-react";
+import { Loader2, Clock, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Schema } from "../../amplify/data/resource";
 
@@ -27,22 +26,25 @@ export function TakeQuizPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<Map<number, number>>(new Map());
   const [submitting, setSubmitting] = useState(false);
-  const [score, setScore] = useState(0);
+  const [timerStarted, setTimerStarted] = useState(false);
+  const startTimeRef = useRef<number>(Date.now());
 
   const currentQuestion = questions[currentIndex];
+  const isFirstQuestion = currentIndex === 0;
   const isLastQuestion = currentIndex === questions.length - 1;
   const timePerQuestion = quiz?.timePerQuestion ?? 60;
+  const totalTime = timePerQuestion * (questions.length || 1);
 
-  const handleTimeExpire = useCallback(() => {
-    if (!submitting && currentQuestion) {
-      handleSubmit(true);
+  const handleTimeExpire = useCallback(async () => {
+    if (!submitting && quiz && questions.length > 0) {
+      await handleFinishQuiz();
     }
-  }, [submitting, currentQuestion]);
+  }, [submitting, quiz, questions]);
 
   const { timeRemaining, restart } = useTimer({
-    duration: timePerQuestion,
+    duration: totalTime,
     onExpire: handleTimeExpire,
     autoStart: false,
   });
@@ -56,7 +58,6 @@ export function TakeQuizPage() {
       try {
         const validQuestionIds = quiz.questionIds.filter((id): id is string => id !== null);
         const fetchedQuestions = await getQuestionsByIds(validQuestionIds);
-        // Sort by the order in questionIds
         const orderedQuestions = quiz.questionIds
           .map((id) => fetchedQuestions.find((q) => q.id === id))
           .filter((q): q is Question => q !== undefined);
@@ -72,13 +73,15 @@ export function TakeQuizPage() {
     loadQuestions();
   }, [quiz?.questionIds, quiz?.currentQuestionIndex]);
 
-  // Start timer when current question changes
+  // Start overall timer once questions are loaded
   useEffect(() => {
-    if (questions.length > 0 && !loadingQuestions) {
-      restart(timePerQuestion);
-      setSelectedAnswer(null);
+    if (questions.length > 0 && !loadingQuestions && !timerStarted) {
+      const totalQuizTime = timePerQuestion * questions.length;
+      restart(totalQuizTime);
+      startTimeRef.current = Date.now();
+      setTimerStarted(true);
     }
-  }, [currentIndex, questions.length, loadingQuestions, timePerQuestion]);
+  }, [questions.length, loadingQuestions, timePerQuestion, timerStarted]);
 
   // Redirect if quiz is completed
   useEffect(() => {
@@ -87,40 +90,54 @@ export function TakeQuizPage() {
     }
   }, [quiz?.status, quizId, navigate]);
 
-  const handleSubmit = async (timeout = false) => {
-    if (!quiz || !currentQuestion || submitting) return;
+  const handleSelectAnswer = (optionIndex: number) => {
+    setAnswers(prev => new Map(prev).set(currentIndex, optionIndex));
+  };
+
+  const handlePrevious = () => {
+    if (!isFirstQuestion) {
+      setCurrentIndex(prev => prev - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (!isLastQuestion) {
+      setCurrentIndex(prev => prev + 1);
+    }
+  };
+
+  const handleFinishQuiz = async () => {
+    if (!quiz || submitting) return;
 
     setSubmitting(true);
-    const answerIndex = timeout ? null : parseInt(selectedAnswer ?? "-1", 10);
-    const isCorrect =
-      answerIndex !== null && answerIndex === currentQuestion.correctIndex;
-    const timeTaken = timePerQuestion - timeRemaining;
+    const totalTimeTaken = Math.floor((Date.now() - startTimeRef.current) / 1000);
+    const avgTimePerQuestion = Math.floor(totalTimeTaken / questions.length);
 
     try {
-      await submitAnswer({
-        quizId: quiz.id,
-        questionId: currentQuestion.id,
-        questionIndex: currentIndex,
-        selectedIndex: answerIndex === -1 ? null : answerIndex,
-        isCorrect,
-        timeTaken,
-      });
+      let correctCount = 0;
 
-      const newScore = score + (isCorrect ? 1 : 0);
-      setScore(newScore);
+      // Submit all answers
+      for (let i = 0; i < questions.length; i++) {
+        const question = questions[i];
+        const selectedIndex = answers.get(i) ?? null;
+        const isCorrect = selectedIndex !== null && selectedIndex === question.correctIndex;
 
-      if (isLastQuestion) {
-        await completeQuiz(quiz.id, newScore);
-        navigate(`/quiz/${quiz.id}/results`);
-      } else {
-        const nextIndex = currentIndex + 1;
-        await updateQuizProgress(quiz.id, nextIndex);
-        setCurrentIndex(nextIndex);
-        setSelectedAnswer(null);
+        if (isCorrect) correctCount++;
+
+        await submitAnswer({
+          quizId: quiz.id,
+          questionId: question.id,
+          questionIndex: i,
+          selectedIndex,
+          isCorrect,
+          timeTaken: avgTimePerQuestion,
+        });
       }
+
+      await completeQuiz(quiz.id, correctCount);
+      navigate(`/quiz/${quiz.id}/results`);
     } catch (error) {
-      console.error("Failed to submit answer:", error);
-    } finally {
+      console.error("Failed to submit quiz:", error);
       setSubmitting(false);
     }
   };
@@ -143,9 +160,11 @@ export function TakeQuizPage() {
     );
   }
 
-  const progressPercent = ((currentIndex + 1) / questions.length) * 100;
-  const timerPercent = (timeRemaining / timePerQuestion) * 100;
-  const isTimerWarning = timeRemaining <= 10;
+  const answeredCount = answers.size;
+  const progressPercent = (answeredCount / questions.length) * 100;
+  const timerPercent = (timeRemaining / totalTime) * 100;
+  const isTimerWarning = timeRemaining <= 60;
+  const selectedAnswer = answers.get(currentIndex);
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -174,15 +193,15 @@ export function TakeQuizPage() {
         {/* Progress bars */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Progress</span>
-            <span>{Math.round(progressPercent)}%</span>
+            <span>Answered</span>
+            <span>{answeredCount} / {questions.length}</span>
           </div>
           <Progress value={progressPercent} className="h-2" />
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Time</span>
-            <span>{timeRemaining}s</span>
+            <span>Time Remaining</span>
+            <span>{formatTime(timeRemaining)}</span>
           </div>
           <Progress
             value={timerPercent}
@@ -191,6 +210,26 @@ export function TakeQuizPage() {
               isTimerWarning && "[&>*]:bg-destructive"
             )}
           />
+        </div>
+
+        {/* Question Navigator */}
+        <div className="flex flex-wrap gap-2">
+          {questions.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentIndex(idx)}
+              className={cn(
+                "w-8 h-8 rounded-md text-sm font-medium transition-colors",
+                idx === currentIndex
+                  ? "bg-primary text-primary-foreground"
+                  : answers.has(idx)
+                  ? "bg-green-500 text-white"
+                  : "bg-muted hover:bg-muted/80"
+              )}
+            >
+              {idx + 1}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -203,8 +242,8 @@ export function TakeQuizPage() {
         </CardHeader>
         <CardContent>
           <RadioGroup
-            value={selectedAnswer ?? ""}
-            onValueChange={setSelectedAnswer}
+            value={selectedAnswer?.toString() ?? ""}
+            onValueChange={(value) => handleSelectAnswer(parseInt(value, 10))}
             className="space-y-3"
           >
             {currentQuestion?.options?.map((option, index) => (
@@ -212,11 +251,11 @@ export function TakeQuizPage() {
                 key={index}
                 className={cn(
                   "flex items-center space-x-3 rounded-lg border p-4 cursor-pointer transition-colors",
-                  selectedAnswer === index.toString()
+                  selectedAnswer === index
                     ? "border-primary bg-primary/5"
                     : "hover:bg-accent"
                 )}
-                onClick={() => setSelectedAnswer(index.toString())}
+                onClick={() => handleSelectAnswer(index)}
               >
                 <RadioGroupItem
                   value={index.toString()}
@@ -232,30 +271,44 @@ export function TakeQuizPage() {
             ))}
           </RadioGroup>
 
-          <div className="mt-6 flex justify-end">
+          <div className="mt-6 flex justify-between">
             <Button
-              onClick={() => handleSubmit(false)}
-              disabled={selectedAnswer === null || submitting}
-              size="lg"
+              variant="outline"
+              onClick={handlePrevious}
+              disabled={isFirstQuestion}
             >
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Submitting...
-                </>
-              ) : isLastQuestion ? (
-                "Finish Quiz"
-              ) : (
-                "Next Question"
-              )}
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Previous
             </Button>
+
+            {isLastQuestion ? (
+              <Button
+                onClick={handleFinishQuiz}
+                disabled={submitting}
+                size="lg"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Finish Quiz"
+                )}
+              </Button>
+            ) : (
+              <Button onClick={handleNext}>
+                Next
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Score indicator */}
+      {/* Status indicator */}
       <div className="mt-4 text-center text-sm text-muted-foreground">
-        Current Score: {score} / {currentIndex}
+        {answeredCount} of {questions.length} questions answered
       </div>
     </div>
   );

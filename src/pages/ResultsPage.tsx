@@ -145,8 +145,8 @@ export function ResultsPage() {
           <CardDescription>Review your answers</CardDescription>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="max-h-[600px]">
-            <div className="space-y-6">
+          <ScrollArea className="h-[500px]" type="always">
+            <div className="space-y-6 pr-4">
               {results.map((result, index) => {
                 const { question, answer } = result;
                 const isCorrect = answer.isCorrect;

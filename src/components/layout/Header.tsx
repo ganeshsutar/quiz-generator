@@ -1,5 +1,6 @@
 import { useAuth } from "@/components/auth/AuthWrapper";
 import { Button } from "@/components/ui/button";
+import { ModeToggle } from "@/components/mode-toggle";
 import { LogOut } from "lucide-react";
 
 export function Header() {
@@ -11,6 +12,7 @@ export function Header() {
         <h1 className="text-lg font-semibold text-primary">Quiz Generator</h1>
       </div>
       <div className="flex items-center gap-4">
+        <ModeToggle />
         {user && (
           <>
             <span className="text-sm text-muted-foreground">
