@@ -12,7 +12,7 @@ const schema = a.schema({
       questions: a.hasMany("Question", "questionSetId"),
     })
     .authorization((allow) => [
-      allow.publicApiKey().to(["read"]),
+      allow.publicApiKey().to(["read", "create", "update", "delete"]),
       allow.authenticated().to(["read"]),
     ]),
 
@@ -27,7 +27,7 @@ const schema = a.schema({
       explanation: a.string(),
     })
     .authorization((allow) => [
-      allow.publicApiKey().to(["read"]),
+      allow.publicApiKey().to(["read", "create", "update", "delete"]),
       allow.authenticated().to(["read"]),
     ]),
 
