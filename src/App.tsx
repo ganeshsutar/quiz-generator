@@ -1,39 +1,26 @@
-import { useEffect, useState } from "react";
-import type { Schema } from "../amplify/data/resource";
-import { generateClient } from "aws-amplify/data";
-
-const client = generateClient<Schema>();
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthWrapper } from "@/components/auth/AuthWrapper";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { HomePage } from "@/pages/HomePage";
+import { CreateQuizPage } from "@/pages/CreateQuizPage";
+import { TakeQuizPage } from "@/pages/TakeQuizPage";
+import { ResultsPage } from "@/pages/ResultsPage";
 
 function App() {
-  const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
-
-  useEffect(() => {
-    client.models.Todo.observeQuery().subscribe({
-      next: (data) => setTodos([...data.items]),
-    });
-  }, []);
-
-  function createTodo() {
-    client.models.Todo.create({ content: window.prompt("Todo content") });
-  }
-
   return (
-    <main>
-      <h1>My todos</h1>
-      <button onClick={createTodo}>+ new</button>
-      <ul>
-        {todos.map((todo) => (
-          <li key={todo.id}>{todo.content}</li>
-        ))}
-      </ul>
-      <div>
-        🥳 App successfully hosted. Try creating a new todo.
-        <br />
-        <a href="https://docs.amplify.aws/react/start/quickstart/#make-frontend-updates">
-          Review next step of this tutorial.
-        </a>
-      </div>
-    </main>
+    <AuthWrapper>
+      <BrowserRouter>
+        <AppLayout>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/quiz/new" element={<CreateQuizPage />} />
+            <Route path="/quiz/:quizId" element={<TakeQuizPage />} />
+            <Route path="/quiz/:quizId/results" element={<ResultsPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AppLayout>
+      </BrowserRouter>
+    </AuthWrapper>
   );
 }
 
