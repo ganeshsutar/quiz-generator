@@ -5,6 +5,7 @@ import {
   getQuestionsByIds,
   submitAnswer,
   completeQuiz,
+  shuffleArray,
 } from "@/hooks/useQuiz";
 import { useTimer, formatTime } from "@/hooks/useTimer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,7 @@ import { cn } from "@/lib/utils";
 import type { Schema } from "../../amplify/data/resource";
 
 type Question = Schema["Question"]["type"];
+type ShuffledOption = { text: string; originalIndex: number };
 
 export function TakeQuizPage() {
   const { quizId } = useParams<{ quizId: string }>();
@@ -24,6 +26,7 @@ export function TakeQuizPage() {
   const { quiz, loading: loadingQuiz } = useQuizData(quizId);
 
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [shuffledOptionsMap, setShuffledOptionsMap] = useState<Map<number, ShuffledOption[]>>(new Map());
   const [loadingQuestions, setLoadingQuestions] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Map<number, number>>(new Map());
@@ -63,6 +66,18 @@ export function TakeQuizPage() {
           .filter((q): q is Question => q !== undefined);
         setQuestions(orderedQuestions);
         setCurrentIndex(quiz.currentQuestionIndex ?? 0);
+
+        // Create shuffled options for each question
+        const shuffledMap = new Map<number, ShuffledOption[]>();
+        orderedQuestions.forEach((question, qIndex) => {
+          if (question.options) {
+            const optionsWithIndex: ShuffledOption[] = question.options
+              .filter((opt): opt is string => opt !== null)
+              .map((text, originalIndex) => ({ text, originalIndex }));
+            shuffledMap.set(qIndex, shuffleArray(optionsWithIndex));
+          }
+        });
+        setShuffledOptionsMap(shuffledMap);
       } catch (error) {
         console.error("Failed to load questions:", error);
       } finally {
@@ -170,22 +185,22 @@ export function TakeQuizPage() {
     <div className="max-w-3xl mx-auto">
       {/* Header with progress and timer */}
       <div className="mb-6 space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h1 className="text-xl font-bold">{quiz.questionSetName ?? "Quiz"}</h1>
+            <h1 className="text-lg sm:text-xl font-bold">{quiz.questionSetName ?? "Quiz"}</h1>
             <p className="text-sm text-muted-foreground">
               Question {currentIndex + 1} of {questions.length}
             </p>
           </div>
           <div
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-lg font-bold",
+              "flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg font-mono text-base sm:text-lg font-bold self-start sm:self-auto",
               isTimerWarning
                 ? "bg-destructive/10 text-destructive animate-pulse"
                 : "bg-muted"
             )}
           >
-            <Clock className="h-5 w-5" />
+            <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
             {formatTime(timeRemaining)}
           </div>
         </div>
@@ -213,13 +228,13 @@ export function TakeQuizPage() {
         </div>
 
         {/* Question Navigator */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
           {questions.map((_, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentIndex(idx)}
               className={cn(
-                "w-8 h-8 rounded-md text-sm font-medium transition-colors",
+                "w-7 h-7 sm:w-8 sm:h-8 rounded-md text-xs sm:text-sm font-medium transition-colors",
                 idx === currentIndex
                   ? "bg-primary text-primary-foreground"
                   : answers.has(idx)
@@ -246,26 +261,26 @@ export function TakeQuizPage() {
             onValueChange={(value) => handleSelectAnswer(parseInt(value, 10))}
             className="space-y-3"
           >
-            {currentQuestion?.options?.map((option, index) => (
+            {shuffledOptionsMap.get(currentIndex)?.map((option, displayIndex) => (
               <div
-                key={index}
+                key={displayIndex}
                 className={cn(
                   "flex items-center space-x-3 rounded-lg border p-4 cursor-pointer transition-colors",
-                  selectedAnswer === index
+                  selectedAnswer === option.originalIndex
                     ? "border-primary bg-primary/5"
                     : "hover:bg-accent"
                 )}
-                onClick={() => handleSelectAnswer(index)}
+                onClick={() => handleSelectAnswer(option.originalIndex)}
               >
                 <RadioGroupItem
-                  value={index.toString()}
-                  id={`option-${index}`}
+                  value={option.originalIndex.toString()}
+                  id={`option-${displayIndex}`}
                 />
                 <Label
-                  htmlFor={`option-${index}`}
+                  htmlFor={`option-${displayIndex}`}
                   className="flex-1 cursor-pointer"
                 >
-                  {option}
+                  {option.text}
                 </Label>
               </div>
             ))}

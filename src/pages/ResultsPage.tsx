@@ -103,18 +103,18 @@ export function ResultsPage() {
           <div className="flex flex-col items-center gap-4">
             <div className="text-6xl font-bold text-primary">{percentage}%</div>
             <Progress value={percentage} className="w-full max-w-xs h-3" />
-            <div className="flex gap-6 text-center">
-              <div>
+            <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-center">
+              <div className="min-w-[80px]">
                 <p className="text-2xl font-bold text-green-500">{correctCount}</p>
                 <p className="text-sm text-muted-foreground">Correct</p>
               </div>
-              <Separator orientation="vertical" className="h-12" />
-              <div>
+              <Separator orientation="vertical" className="hidden sm:block h-12" />
+              <div className="min-w-[80px]">
                 <p className="text-2xl font-bold text-destructive">{total - correctCount}</p>
                 <p className="text-sm text-muted-foreground">Incorrect</p>
               </div>
-              <Separator orientation="vertical" className="h-12" />
-              <div>
+              <Separator orientation="vertical" className="hidden sm:block h-12" />
+              <div className="min-w-[80px]">
                 <p className="text-2xl font-bold">{avgTime}s</p>
                 <p className="text-sm text-muted-foreground">Avg Time</p>
               </div>

@@ -4,17 +4,24 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Plus, Play, CheckCircle2, Clock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSidebar } from "./SidebarContext";
 
-export function Sidebar() {
+function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
   const { runningQuizzes, completedQuizzes, loading } = useQuizzes();
   const location = useLocation();
 
   return (
-    <aside className="w-64 border-r bg-muted/30 flex flex-col">
+    <>
       <div className="p-4">
-        <Link to="/quiz/new">
+        <Link to="/quiz/new" onClick={onLinkClick}>
           <Button className="w-full" size="sm">
             <Plus className="h-4 w-4 mr-2" />
             New Quiz
@@ -53,6 +60,7 @@ export function Sidebar() {
                       <li key={quiz.id}>
                         <Link
                           to={`/quiz/${quiz.id}`}
+                          onClick={onLinkClick}
                           className={cn(
                             "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors",
                             location.pathname === `/quiz/${quiz.id}` && "bg-accent"
@@ -93,6 +101,7 @@ export function Sidebar() {
                       <li key={quiz.id}>
                         <Link
                           to={`/quiz/${quiz.id}/results`}
+                          onClick={onLinkClick}
                           className={cn(
                             "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors",
                             location.pathname === `/quiz/${quiz.id}/results` && "bg-accent"
@@ -115,6 +124,29 @@ export function Sidebar() {
           )}
         </div>
       </ScrollArea>
+    </>
+  );
+}
+
+export function Sidebar() {
+  return (
+    <aside className="hidden md:flex w-64 border-r bg-muted/30 flex-col">
+      <SidebarContent />
     </aside>
+  );
+}
+
+export function MobileSidebar() {
+  const { isOpen, close } = useSidebar();
+
+  return (
+    <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
+      <SheetContent side="left" className="w-64 p-0 flex flex-col">
+        <SheetHeader className="sr-only">
+          <SheetTitle>Navigation Menu</SheetTitle>
+        </SheetHeader>
+        <SidebarContent onLinkClick={close} />
+      </SheetContent>
+    </Sheet>
   );
 }
