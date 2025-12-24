@@ -16,7 +16,7 @@ type Question = Schema["Question"]["type"];
 type QuizAnswer = Schema["QuizAnswer"]["type"];
 
 interface QuestionResult {
-  question: Question;
+  question: Question | null;
   answer: QuizAnswer;
 }
 
@@ -41,13 +41,10 @@ export function ResultsPage() {
         ]);
 
         const questionMap = new Map(questions.map((q) => [q.id, q]));
-        const combined: QuestionResult[] = answers
-          .map((answer) => {
-            const question = questionMap.get(answer.questionId);
-            if (!question) return null;
-            return { question, answer };
-          })
-          .filter((r): r is QuestionResult => r !== null);
+        const combined: QuestionResult[] = answers.map((answer) => {
+          const question = questionMap.get(answer.questionId) ?? null;
+          return { question, answer };
+        });
 
         setResults(combined);
       } catch (error) {
@@ -151,11 +148,11 @@ export function ResultsPage() {
                 const { question, answer } = result;
                 const isCorrect = answer.isCorrect;
                 const selectedIndex = answer.selectedIndex;
-                const correctIndex = question.correctIndex;
+                const correctIndex = question?.correctIndex ?? -1;
 
                 return (
                   <div
-                    key={question.id}
+                    key={answer.questionId}
                     className={cn(
                       "p-4 rounded-lg border",
                       isCorrect ? "border-green-200 bg-green-50/50" : "border-red-200 bg-red-50/50"
@@ -175,53 +172,64 @@ export function ResultsPage() {
                             {answer.timeTaken}s
                           </span>
                         </div>
-                        <p className="font-medium">{question.text}</p>
+                        <p className="font-medium">
+                          {question?.text ?? "Question not available"}
+                        </p>
                       </div>
                     </div>
 
-                    <div className="ml-8 space-y-2">
-                      {question.options?.map((option, optIndex) => {
-                        const isUserAnswer = optIndex === selectedIndex;
-                        const isCorrectAnswer = optIndex === correctIndex;
+                    {question ? (
+                      <div className="ml-8 space-y-2">
+                        {question.options?.map((option, optIndex) => {
+                          const isUserAnswer = optIndex === selectedIndex;
+                          const isCorrectAnswer = optIndex === correctIndex;
 
-                        return (
-                          <div
-                            key={optIndex}
-                            className={cn(
-                              "px-3 py-2 rounded-md text-sm",
-                              isCorrectAnswer && "bg-green-100 text-green-800 font-medium",
-                              isUserAnswer && !isCorrect && "bg-red-100 text-red-800",
-                              !isCorrectAnswer && !isUserAnswer && "bg-muted/50"
-                            )}
-                          >
-                            <span className="mr-2">{String.fromCharCode(65 + optIndex)}.</span>
-                            {option}
-                            {isCorrectAnswer && (
-                              <Badge variant="success" className="ml-2">
-                                Correct
-                              </Badge>
-                            )}
-                            {isUserAnswer && !isCorrect && (
-                              <Badge variant="destructive" className="ml-2">
-                                Your Answer
-                              </Badge>
-                            )}
-                            {isUserAnswer && isCorrect && (
-                              <Badge variant="success" className="ml-2">
-                                Your Answer
-                              </Badge>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {selectedIndex === null && (
-                        <p className="text-sm text-muted-foreground italic">
-                          No answer submitted (timeout)
+                          return (
+                            <div
+                              key={optIndex}
+                              className={cn(
+                                "px-3 py-2 rounded-md text-sm",
+                                isCorrectAnswer && "bg-green-100 text-green-800 font-medium",
+                                isUserAnswer && !isCorrect && "bg-red-100 text-red-800",
+                                !isCorrectAnswer && !isUserAnswer && "bg-muted/50"
+                              )}
+                            >
+                              <span className="mr-2">{String.fromCharCode(65 + optIndex)}.</span>
+                              {option}
+                              {isCorrectAnswer && (
+                                <Badge variant="success" className="ml-2">
+                                  Correct
+                                </Badge>
+                              )}
+                              {isUserAnswer && !isCorrect && (
+                                <Badge variant="destructive" className="ml-2">
+                                  Your Answer
+                                </Badge>
+                              )}
+                              {isUserAnswer && isCorrect && (
+                                <Badge variant="success" className="ml-2">
+                                  Your Answer
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {selectedIndex === null && (
+                          <p className="text-sm text-muted-foreground italic">
+                            No answer submitted (timeout)
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="ml-8 p-3 bg-muted rounded-md">
+                        <p className="text-sm text-muted-foreground">
+                          Question details could not be loaded.
+                          {isCorrect ? " Your answer was correct." : " Your answer was incorrect."}
                         </p>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
-                    {question.explanation && (
+                    {question?.explanation && (
                       <div className="ml-8 mt-3 p-3 bg-muted rounded-md">
                         <p className="text-sm">
                           <span className="font-medium">Explanation: </span>

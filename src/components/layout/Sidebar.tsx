@@ -130,7 +130,7 @@ function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
 
 export function Sidebar() {
   return (
-    <aside className="hidden md:flex w-64 border-r bg-muted/30 flex-col">
+    <aside className="hidden md:flex w-72 border-r bg-muted/30 flex-col">
       <SidebarContent />
     </aside>
   );
@@ -141,7 +141,7 @@ export function MobileSidebar() {
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
-      <SheetContent side="left" className="w-64 p-0 flex flex-col">
+      <SheetContent side="left" className="w-72 p-0 flex flex-col">
         <SheetHeader className="sr-only">
           <SheetTitle>Navigation Menu</SheetTitle>
         </SheetHeader>
