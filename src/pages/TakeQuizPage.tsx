@@ -20,6 +20,18 @@ import type { Schema } from "../../amplify/data/resource";
 type Question = Schema["Question"]["type"];
 type ShuffledOption = { text: string; originalIndex: number };
 
+// Convert all-caps or mostly-caps text to sentence case
+function toSentenceCase(text: string): string {
+  const letters = text.replace(/[^a-zA-Z]/g, '');
+  const uppercaseCount = (text.match(/[A-Z]/g) || []).length;
+
+  // Only convert if more than 50% of letters are uppercase
+  if (letters.length > 0 && uppercaseCount / letters.length > 0.5) {
+    return text.toLowerCase().replace(/^\s*\w/, (c) => c.toUpperCase());
+  }
+  return text;
+}
+
 export function TakeQuizPage() {
   const { quizId } = useParams<{ quizId: string }>();
   const navigate = useNavigate();
@@ -284,7 +296,7 @@ export function TakeQuizPage() {
                   htmlFor={`option-${displayIndex}`}
                   className="flex-1 cursor-pointer"
                 >
-                  {option.text}
+                  {toSentenceCase(option.text)}
                 </Label>
               </div>
             ))}
