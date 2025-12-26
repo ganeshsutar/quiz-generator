@@ -94,7 +94,7 @@ export async function getQuizAnswers(quizId: string): Promise<QuizAnswer[]> {
   let nextToken: string | null | undefined = undefined;
 
   do {
-    const { data, errors, nextToken: newNextToken } = await client.models.QuizAnswer.list({
+    const { data, errors, nextToken: newNextToken }: { data: QuizAnswer[]; errors?: { message: string }[]; nextToken?: string | null } = await client.models.QuizAnswer.list({
       filter: { quizId: { eq: quizId } },
       limit: 100,
       nextToken,
