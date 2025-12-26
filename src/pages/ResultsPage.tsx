@@ -15,6 +15,18 @@ import type { Schema } from "../../amplify/data/resource";
 type Question = Schema["Question"]["type"];
 type QuizAnswer = Schema["QuizAnswer"]["type"];
 
+// Convert all-caps or mostly-caps text to sentence case
+function toSentenceCase(text: string): string {
+  const letters = text.replace(/[^a-zA-Z]/g, '');
+  const uppercaseCount = (text.match(/[A-Z]/g) || []).length;
+
+  // Only convert if more than 50% of letters are uppercase
+  if (letters.length > 0 && uppercaseCount / letters.length > 0.5) {
+    return text.toLowerCase().replace(/^\s*\w/, (c) => c.toUpperCase());
+  }
+  return text;
+}
+
 interface QuestionResult {
   question: Question | null;
   answer: QuizAnswer;
@@ -195,7 +207,7 @@ export function ResultsPage() {
                               )}
                             >
                               <span className="mr-2">{String.fromCharCode(65 + optIndex)}.</span>
-                              {option}
+                              {toSentenceCase(option ?? "")}
                               {isCorrectAnswer && (
                                 <Badge variant="success" className="ml-2">
                                   Correct
