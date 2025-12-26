@@ -89,31 +89,31 @@ export function ResultsPage() {
   const avgTime = results.length > 0 ? Math.round(totalTime / results.length) : 0;
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       {/* Summary Card */}
       <Card className="mb-6">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Quiz Complete!</CardTitle>
-          <CardDescription>{quiz.questionSetName ?? "Quiz"}</CardDescription>
+        <CardHeader className="text-center pb-2">
+          <CardTitle className="text-3xl">Quiz Complete!</CardTitle>
+          <CardDescription className="text-lg">{quiz.questionSetName ?? "Quiz"}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center gap-4">
-            <div className="text-6xl font-bold text-primary">{percentage}%</div>
-            <Progress value={percentage} className="w-full max-w-xs h-3" />
-            <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-center">
-              <div className="min-w-[80px]">
-                <p className="text-2xl font-bold text-green-500">{correctCount}</p>
-                <p className="text-sm text-muted-foreground">Correct</p>
+          <div className="flex flex-col items-center gap-6">
+            <div className="text-7xl font-bold text-primary">{percentage}%</div>
+            <Progress value={percentage} className="w-full max-w-md h-4" />
+            <div className="flex flex-wrap justify-center gap-6 sm:gap-10 text-center">
+              <div className="min-w-[100px]">
+                <p className="text-3xl font-bold text-green-500">{correctCount}</p>
+                <p className="text-base text-muted-foreground">Correct</p>
               </div>
-              <Separator orientation="vertical" className="hidden sm:block h-12" />
-              <div className="min-w-[80px]">
-                <p className="text-2xl font-bold text-destructive">{total - correctCount}</p>
-                <p className="text-sm text-muted-foreground">Incorrect</p>
+              <Separator orientation="vertical" className="hidden sm:block h-14" />
+              <div className="min-w-[100px]">
+                <p className="text-3xl font-bold text-destructive">{total - correctCount}</p>
+                <p className="text-base text-muted-foreground">Incorrect</p>
               </div>
-              <Separator orientation="vertical" className="hidden sm:block h-12" />
-              <div className="min-w-[80px]">
-                <p className="text-2xl font-bold">{avgTime}s</p>
-                <p className="text-sm text-muted-foreground">Avg Time</p>
+              <Separator orientation="vertical" className="hidden sm:block h-14" />
+              <div className="min-w-[100px]">
+                <p className="text-3xl font-bold">{avgTime}s</p>
+                <p className="text-base text-muted-foreground">Avg Time</p>
               </div>
             </div>
           </div>
@@ -138,11 +138,11 @@ export function ResultsPage() {
       {/* Question Breakdown */}
       <Card>
         <CardHeader>
-          <CardTitle>Question Breakdown</CardTitle>
-          <CardDescription>Review your answers</CardDescription>
+          <CardTitle className="text-2xl">Question Breakdown</CardTitle>
+          <CardDescription className="text-base">Review your answers</CardDescription>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[500px]" type="always">
+          <ScrollArea className="h-[600px]" type="always">
             <div className="space-y-6 pr-4">
               {results.map((result, index) => {
                 const { question, answer } = result;
@@ -154,7 +154,7 @@ export function ResultsPage() {
                   <div
                     key={answer.questionId}
                     className={cn(
-                      "p-4 rounded-lg border",
+                      "p-5 rounded-lg border",
                       isCorrect ? "border-green-200 bg-green-50/50" : "border-red-200 bg-red-50/50"
                     )}
                   >

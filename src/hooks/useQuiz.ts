@@ -90,15 +90,25 @@ export async function completeQuiz(quizId: string, score: number): Promise<Quiz>
 }
 
 export async function getQuizAnswers(quizId: string): Promise<QuizAnswer[]> {
-  const { data, errors } = await client.models.QuizAnswer.list({
-    filter: { quizId: { eq: quizId } },
-  });
+  const allAnswers: QuizAnswer[] = [];
+  let nextToken: string | null | undefined = undefined;
 
-  if (errors) {
-    throw new Error(errors[0].message);
-  }
+  do {
+    const { data, errors, nextToken: newNextToken } = await client.models.QuizAnswer.list({
+      filter: { quizId: { eq: quizId } },
+      limit: 100,
+      nextToken,
+    });
 
-  return data.sort((a, b) => (a.questionIndex ?? 0) - (b.questionIndex ?? 0));
+    if (errors) {
+      throw new Error(errors[0].message);
+    }
+
+    allAnswers.push(...data);
+    nextToken = newNextToken;
+  } while (nextToken);
+
+  return allAnswers.sort((a, b) => (a.questionIndex ?? 0) - (b.questionIndex ?? 0));
 }
 
 export async function getQuestionsByIds(questionIds: string[]): Promise<Question[]> {

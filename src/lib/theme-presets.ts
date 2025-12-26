@@ -7,6 +7,10 @@ export type ColorScheme =
   | "violet"
   | "custom";
 
+export type ThemeRadius = "none" | "sm" | "md" | "lg" | "xl";
+
+export type ThemeStyle = "default" | "new-york";
+
 export interface ThemeColors {
   primary: string;
   primaryForeground: string;
@@ -18,6 +22,19 @@ export interface ColorPreset {
   label: string;
   colors: ThemeColors;
 }
+
+export const radiusOptions: { value: ThemeRadius; label: string; cssValue: string }[] = [
+  { value: "none", label: "None", cssValue: "0" },
+  { value: "sm", label: "Small", cssValue: "0.3rem" },
+  { value: "md", label: "Medium", cssValue: "0.5rem" },
+  { value: "lg", label: "Large", cssValue: "0.75rem" },
+  { value: "xl", label: "Extra Large", cssValue: "1rem" },
+];
+
+export const styleOptions: { value: ThemeStyle; label: string; description: string }[] = [
+  { value: "default", label: "Default", description: "Classic shadcn/ui style" },
+  { value: "new-york", label: "New York", description: "Sharp edges, bolder colors" },
+];
 
 export const colorPresets: Record<Exclude<ColorScheme, "custom">, ColorPreset> = {
   purple: {
