@@ -62,7 +62,7 @@ export function ResultsPage() {
     if (quiz && quiz.status !== "COMPLETED") {
       navigate(`/quiz/${quizId}`);
     }
-  }, [quiz?.status, quizId, navigate]);
+  }, [quiz, quizId, navigate]);
 
   if (loadingQuiz || loading) {
     return (

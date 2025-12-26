@@ -40,17 +40,13 @@ export function TakeQuizPage() {
   const timePerQuestion = quiz?.timePerQuestion ?? 60;
   const totalTime = timePerQuestion * (questions.length || 1);
 
-  const handleTimeExpire = useCallback(async () => {
-    if (!submitting && quiz && questions.length > 0) {
-      await handleFinishQuiz();
-    }
-  }, [submitting, quiz, questions]);
-
   const { timeRemaining, restart } = useTimer({
     duration: totalTime,
-    onExpire: handleTimeExpire,
+    onExpire: () => {},
     autoStart: false,
   });
+
+  const timerExpiredRef = useRef(false);
 
   // Load questions when quiz is available
   useEffect(() => {
@@ -96,7 +92,7 @@ export function TakeQuizPage() {
       startTimeRef.current = Date.now();
       setTimerStarted(true);
     }
-  }, [questions.length, loadingQuestions, timePerQuestion, timerStarted]);
+  }, [questions.length, loadingQuestions, timePerQuestion, timerStarted, restart]);
 
   // Redirect if quiz is completed
   useEffect(() => {
@@ -121,7 +117,7 @@ export function TakeQuizPage() {
     }
   };
 
-  const handleFinishQuiz = async () => {
+  const handleFinishQuiz = useCallback(async () => {
     if (!quiz || submitting) return;
 
     setSubmitting(true);
@@ -155,7 +151,15 @@ export function TakeQuizPage() {
       console.error("Failed to submit quiz:", error);
       setSubmitting(false);
     }
-  };
+  }, [quiz, submitting, questions, answers, navigate]);
+
+  // Handle timer expiration
+  useEffect(() => {
+    if (timeRemaining === 0 && !timerExpiredRef.current && questions.length > 0) {
+      timerExpiredRef.current = true;
+      handleFinishQuiz();
+    }
+  }, [timeRemaining, questions.length, handleFinishQuiz]);
 
   if (loadingQuiz || loadingQuestions) {
     return (

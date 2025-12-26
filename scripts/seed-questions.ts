@@ -812,8 +812,8 @@ function listQuestionSets() {
   console.log("\nAvailable Question Sets:\n");
   console.log("  Flag            Name                          Questions");
   console.log("  ----            ----                          ---------");
-  questionSets.forEach((set, index) => {
-    const flag = Object.entries(questionSetKeys).find(([_, name]) => name === set.name)?.[0] || "";
+  questionSets.forEach((set) => {
+    const flag = Object.entries(questionSetKeys).find(([, name]) => name === set.name)?.[0] || "";
     console.log(`  ${flag.padEnd(16)}${set.name.padEnd(30)}${set.questions.length}`);
   });
   console.log("");
